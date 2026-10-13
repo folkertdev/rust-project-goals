@@ -179,4 +179,4 @@ Funding will go to team reviewers and champions. Excess funds will be contribute
 
 | Purpose | Cost | Funded | Sponsor(s) |
 | :-- | :-- | :-- | :-- |
-| Reviewers + champions | $10,000 | No | [Devolutions](https://devolutions.net/) |
+| Reviewers + champions | $10,000 | Yes | [Devolutions](https://devolutions.net/) |
