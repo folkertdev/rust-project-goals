@@ -3,7 +3,8 @@
 | Metadata              |                             |
 | :-------------------- | --------------------------- |
 | Contact               | @marcoieni                  |
-| Status                | Proposed                    |
+| Status                | Accepted                    |
+| Tracking issue        | [rust-lang/goals#820]       |
 | Other tracking issues | [rust-lang/simpleinfra#962] |
 | Zulip channel         | [#t-infra]                  |
 
