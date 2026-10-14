@@ -63,7 +63,7 @@ Allocators are currently being worked on mostly on an ad-hoc basis, as time perm
 
 | Purpose | Cost | Funded | Sponsor(s) |
 |---------|------|--------|------------|
-| Implementation, testing, and review | Ask | Partial | |
+| Implementation, testing, and review | Ask | Partial | Pydantic |
 
 ## Frequently asked questions
 
