@@ -162,11 +162,13 @@ impl<'g> GoalData<'g> {
                 link: &ask.link_path,
                 status: ask.status,
             }),
-            _ => spanned::bail!(
-                ask.goal_titles[3],
-                "expected either 1 or 2 goal titles, not {}",
-                ask.goal_titles.len(),
-            ),
+            _ => {
+                spanned::bail!(
+                    ask.goal_titles[3],
+                    "expected either 1 or 2 goal titles, not {}",
+                    ask.goal_titles.len(),
+                );
+            }
         }
     }
 

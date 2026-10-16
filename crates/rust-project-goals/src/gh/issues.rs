@@ -572,7 +572,7 @@ fn try_checkboxes(issue: &ExistingGithubIssue) -> Result<Progress> {
                     (Some(c), _) => c,
                     (None, Some(c)) => c,
                     (None, None) => {
-                        spanned::bail_here!("invalid issue URL `{issue_url}`")
+                        spanned::bail_here!("invalid issue URL `{issue_url}`");
                     }
                 };
                 let repository = Repository::new(&c["org"], &c["repo"]);
@@ -595,7 +595,7 @@ fn try_checkboxes(issue: &ExistingGithubIssue) -> Result<Progress> {
                     }
 
                     Progress::Error { message } => {
-                        spanned::bail_here!("error parsing {repository}#{issue_number}: {message}")
+                        spanned::bail_here!("error parsing {repository}#{issue_number}: {message}");
                     }
                 }
             }

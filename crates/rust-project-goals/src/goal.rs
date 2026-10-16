@@ -1587,7 +1587,7 @@ impl Status {
             value,
             "unrecognized status, expected one of {:?}",
             valid_values.iter().map(|(s, _)| s).collect::<Vec<_>>(),
-        )
+        );
     }
 }
 
@@ -1635,15 +1635,15 @@ fn extract_metadata(sections: &[Section]) -> Result<Option<Metadata>> {
         spanned::bail!(
             first_table.rows[0][0],
             "metadata table has no `Contact` row"
-        )
+        );
     };
 
     if !re::is_just(&re::USERNAME, contact_row[1].trim()) {
-        spanned::bail!(contact_row[1], "contact must be a single github username",)
+        spanned::bail!(contact_row[1], "contact must be a single github username",);
     }
 
     let Some(status_row) = first_table.rows.iter().find(|row| row[0] == "Status") else {
-        spanned::bail!(first_table.rows[0][0], "metadata table has no `Status` row")
+        spanned::bail!(first_table.rows[0][0], "metadata table has no `Status` row");
     };
 
     let status = Status::try_from(status_row[1].as_deref())?;
@@ -1702,14 +1702,14 @@ fn extract_metadata(sections: &[Section]) -> Result<Option<Metadata>> {
             let team_name = m.name("team").unwrap().as_str().to_string();
 
             let Some(team) = team::get_team_name(&team_name)? else {
-                spanned::bail!(row_name, "team `{team_name}` is not recognized")
+                spanned::bail!(row_name, "team `{team_name}` is not recognized");
             };
 
             if champions.contains_key(team) {
                 spanned::bail!(
                     row_name,
                     "multiple rows naming champions for team `{team_name}`"
-                )
+                );
             } else {
                 champions.insert(team, row_value.clone());
             }
@@ -1718,7 +1718,7 @@ fn extract_metadata(sections: &[Section]) -> Result<Option<Metadata>> {
                 row_name,
                 "metadata row `{}` talks about champions but is not of the form `[team-name] champion`",
                 &**row_name
-            )
+            );
         }
     }
 
@@ -1903,14 +1903,14 @@ fn extract_roadmap_metadata(sections: &[Section]) -> Result<Option<RoadmapMetada
         spanned::bail!(
             first_table.rows[0][0],
             "roadmap metadata table has no `What and why` row"
-        )
+        );
     };
 
     let Some(contact_row) = first_table.rows.iter().find(|row| row[0] == "Contact") else {
         spanned::bail!(
             first_table.rows[0][0],
             "roadmap metadata table has no `Contact` row"
-        )
+        );
     };
 
     Ok(Some(RoadmapMetadata {
@@ -1980,12 +1980,12 @@ fn extract_team_involvement(
         spanned::bail!(
             &section.title,
             "no `Team asks` or `Ownership and team asks` section found"
-        )
+        );
     } else {
         spanned::bail_here!(
             "no `Team asks` or `Ownership and team asks` section found in {}",
             link_path.display()
-        )
+        );
     }
 }
 
@@ -2093,11 +2093,13 @@ impl SupportLevel {
             "small" => Ok(SupportLevel::Small),
             "medium" => Ok(SupportLevel::Medium),
             "large" => Ok(SupportLevel::Large),
-            other => spanned::bail!(
-                s,
-                "unrecognized support level `{}`, expected one of: Small, Medium, Large",
-                other
-            ),
+            other => {
+                spanned::bail!(
+                    s,
+                    "unrecognized support level `{}`, expected one of: Small, Medium, Large",
+                    other
+                );
+            }
         }
     }
 
@@ -2442,7 +2444,7 @@ fn goal_plan(subgoal: Option<Spanned<String>>, section: &Section) -> Result<Opti
                 thats_too_many,
                 section.title.content,
                 table_error.join("\n"),
-            )
+            );
         }
     }
 }
