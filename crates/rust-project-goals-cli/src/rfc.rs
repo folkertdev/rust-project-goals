@@ -349,7 +349,7 @@ pub fn generate_issues(
             }
             progress_bar::finalize_progress_bar();
             if success == 0 {
-                spanned::bail_here!("all actions failed, aborting")
+                spanned::bail_here!("all actions failed, aborting");
             }
 
             // Clear the cached issues since we just modified them
@@ -680,7 +680,7 @@ fn zulip_topic(goal_name: &str, issue_number: u64) -> String {
 }
 
 /// URL-encodes a Zulip topic and returns a full URL to it.
-/// 
+///
 /// See <https://zulip.com/api/zulip-urls#operand-encoding-and-decoding>.
 fn zulip_topic_url(topic: &str) -> String {
     let mut encoded = String::with_capacity(topic.len());

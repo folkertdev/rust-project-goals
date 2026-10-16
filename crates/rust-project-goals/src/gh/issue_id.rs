@@ -31,7 +31,7 @@ impl std::str::FromStr for Repository {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let Some(c) = REPOSITORY.captures(s) else {
-            anyhow::bail!("invalid repository `{s}`")
+            anyhow::bail!("invalid repository `{s}`");
         };
 
         Ok(Repository::new(&c[1], &c[2]))
@@ -92,7 +92,7 @@ impl std::str::FromStr for IssueId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let Some(c) = TRACKING_ISSUE.captures(s) else {
-            anyhow::bail!("invalid issue-id")
+            anyhow::bail!("invalid issue-id");
         };
 
         Ok(IssueId::new(Repository::new(&c[1], &c[2]), c[3].parse()?))
