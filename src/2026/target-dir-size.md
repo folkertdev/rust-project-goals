@@ -77,7 +77,7 @@ Furthermore, the Cargo team has suggested several possible improvements to disk 
 
 We plan a two-phase goal.
 The first is a small initiative that has only Jynn as the owner, planned at 3-6 months, with an aim of 30-40% decrease in size for fresh builds.
-In the second phase, we will create a funded team of 3-5 engineers, planned at 12 months, and aim to decrease the size of the directory by 60% or more for fresh builds and by 80% or more for repeated builds across version branches.
+In the second phase, we will organize a team of 3 engineers, plus team champions, planned at 12 months, and aim to decrease the size of the directory by 60% or more for fresh builds and by 80% or more for repeated builds across version branches.
 
 We will work on both decreases in artifact size and garbage-collection within a target directory, such as artifacts from an earlier edit.
 We will benchmark based on real crates in the Rust ecosystem, focusing on disproportionately large and widely used crates.
@@ -110,6 +110,7 @@ All structural redesigns will be conditional on benchmarks that show that they'r
 - **Work together.** There are many people who want to work on the compiler and few who have the expertise to do so.
   We have an explicit goal of teaching people about the compiler, especially about the query system and `rustc_metadata`, so that they can continue to maintain these subsystems even after the goal is closed.
   As a corollary, we will choose optimizations that can be worked on in parallel, so that multiple people can be working at once, collaborating and bouncing ideas off of each other.
+
   *Note*: A common problem when optimizing CPU time is that improvements in one area regress other areas, especially when touching the query system, forcing work to essentially be done in serial.
   We do *not* expect that to be the case here, because so little optimization has been done to date.
   We will benchmark each change to confirm, and will revist our scheduling assumptions every 3 months based on observed conflicts.
@@ -118,7 +119,10 @@ All structural redesigns will be conditional on benchmarks that show that they'r
 
 ### Work items over the next year
 
-See [hackmd](https://hackmd.io/@jyn514/rkuckyShfl) for a detailed workplan.
+See [hackmd] for a detailed workplan.
+
+[hackmd]: https://hackmd.io/%40jyn514/rkuckyShfl
+
 
 | Task        | Owner(s) | Notes |
 | ----------- | -------- | ----- |
@@ -139,10 +143,10 @@ See [hackmd](https://hackmd.io/@jyn514/rkuckyShfl) for a detailed workplan.
 
 
 Suggested reviewers:
-- cargo: Ed Page, Ross Sullivan
-- compiler: Petrochenkov, Nick Nethercote
-- compiler/performance: Jakub Beranek
-- infra/bootstrap: Jakub
+- cargo: @epage, @weihanglo, @ranger-ross
+- compiler: @petrochenkov, @nnethercote
+- compiler/performance: @Kobzol
+- infra/bootstrap: @Kobzol
 
 ## Help wanted
 Note: at this stage we are primarily looking for contributors who are *new* to this area of the compiler, or new to the Rust project overall, and wish to be mentored as part of this goal.
@@ -163,7 +167,7 @@ then a mid-term phase with a larger group.
 
 **Phase 1: Measurements and near-term improvements**
 
-This goal needs a minimum of (Ask) to run, which will allow us to do preliminary research and high-leverage low-hanging improvements, as described in the "Measurements" and "Near-term improvements" section of the HackMD.
+This goal needs a minimum of $60k to run, which will allow us to do preliminary research and high-leverage low-hanging improvements, as described in the "Measurements" and "Near-term improvements" section of the HackMD.
 Our best estimate is that this minimum funding would give around a 30% improvement in incremental target sizes over the next 6 months.
 
 I have extensive experience working on the compiler, including the query system and integration work between Rustc and Cargo.
@@ -179,7 +183,7 @@ Additional funding will allow me to hire and mentor other compiler and build sys
 not only accelerating timelines but also completing more overall workstreams.
 Furthermore, it will allow me to focus on design work rather than implementation, unlocking the larger structural improvements that require coordination between teams.
 
-This amount of funding will allow us to reach the 60-70% (per-directory) and 80-90% (cross-directory) targets from the goal summary.
+This amount of funding will allow us to reach the 60% (per-directory) and 80% (cross-directory) targets from the proposal section.
 
 @weihanglo is a current member of the Cargo team and a member of Amazon's build performance team. He has experience implementing, reviewing, and designing changes to Cargo's garbage collection and build configuration, and has made `-Z embed-metadata` the default in Cargo, reducing metadata size by half on nightly toolchains. He has [written in detail][cargo-missing-parts] about the changes that would improve binary size.
 
