@@ -1152,28 +1152,24 @@ pub fn format_highlight_goal_sections(
 }
 
 /// Format a summary table of goals needing funding.
-/// Columns: status emoji, Goal, Cost, Sponsor.
+/// Columns: status emoji, Goal, Cost, Funding contact, Sponsor(s).
 pub fn format_funding_table(goals: &[&GoalDocument]) -> String {
     let mut output = String::new();
-    output.push_str("| | Goal | Cost | Funding contact | Sponsor(s) |\n");
-    output.push_str("| --- | --- | --- | --- | --- |\n");
+    format_funding_table_header(&mut output, true);
     for goal in goals {
-        format_funding_table_row(&mut output, goal);
+        format_funding_table_row(&mut output, goal, true);
     }
     output
 }
 
 /// Format a summary table of goals needing funding, grouped by roadmap.
-/// Each roadmap gets a bold header row linking to the roadmap page.
+/// Each roadmap gets a heading linking to the roadmap page and its own table.
 /// Goals not in any roadmap go under "Other goals".
 pub fn format_funding_table_grouped(
     goals: &[&GoalDocument],
     roadmaps: &[&RoadmapDocument],
 ) -> String {
     let mut output = String::new();
-    output.push_str("| | Goal | Cost | Funding contact | Sponsor(s) |\n");
-    output.push_str("| --- | --- | --- | --- | --- |\n");
-
     let mut used: Vec<bool> = vec![false; goals.len()];
 
     // Sort roadmaps alphabetically by short title
@@ -1193,37 +1189,37 @@ pub fn format_funding_table_grouped(
             continue;
         }
 
-        // Emit roadmap header row
         output.push_str(&format!(
-            "| - | **[{}]({})** | -- | -- | -- |\n",
-            theme,
-            roadmap.link_path.display(),
+            "### [{theme}]({url})\n\n",
+            url = roadmap.link_path.display(),
         ));
+        format_funding_table_header(&mut output, true);
 
         for i in &matching {
             used[*i] = true;
-            format_funding_table_row(&mut output, goals[*i]);
+            format_funding_table_row(&mut output, goals[*i], true);
         }
+        output.push('\n');
     }
 
     // Emit "Other goals" for anything not in a roadmap
     let other: Vec<usize> = (0..goals.len()).filter(|i| !used[*i]).collect();
     if !other.is_empty() {
-        output.push_str("| - | **Other goals** | -- | -- | -- |\n");
+        output.push_str("### Other goals\n\n");
+        format_funding_table_header(&mut output, true);
         for i in &other {
-            format_funding_table_row(&mut output, goals[*i]);
+            format_funding_table_row(&mut output, goals[*i], true);
         }
+        output.push('\n');
     }
 
     output
 }
 
 /// Format a summary table of goals needing funding, grouped by funding contact.
-/// Each distinct contact gets a bold header row. Goals are listed underneath their contact.
+/// Each distinct contact gets a heading and its own table (without the contact column).
 pub fn format_funding_table_grouped_by_contact(goals: &[&GoalDocument]) -> String {
     let mut output = String::new();
-    output.push_str("| | Goal | Cost | Funding contact | Sponsor(s) |\n");
-    output.push_str("| --- | --- | --- | --- | --- |\n");
 
     // Group goals by their funding contact
     let mut by_contact: BTreeMap<String, Vec<&GoalDocument>> = BTreeMap::new();
@@ -1233,11 +1229,13 @@ pub fn format_funding_table_grouped_by_contact(goals: &[&GoalDocument]) -> Strin
     }
 
     for (contact, contact_goals) in &by_contact {
-        output.push_str(&format!("| - | **{}** | -- | -- | -- |\n", contact));
+        output.push_str(&format!("### {contact}\n\n"));
+        format_funding_table_header(&mut output, false);
 
         for goal in contact_goals {
-            format_funding_table_row(&mut output, goal);
+            format_funding_table_row(&mut output, goal, false);
         }
+        output.push('\n');
     }
 
     output
@@ -1252,7 +1250,17 @@ pub fn format_funding_legend() -> String {
     )
 }
 
-fn format_funding_table_row(output: &mut String, goal: &GoalDocument) {
+fn format_funding_table_header(output: &mut String, include_contact: bool) {
+    if include_contact {
+        output.push_str("| | Goal | Cost | Funding contact | Sponsor(s) |\n");
+        output.push_str("| --- | --- | --- | --- | --- |\n");
+    } else {
+        output.push_str("| | Goal | Cost | Sponsor(s) |\n");
+        output.push_str("| --- | --- | --- | --- |\n");
+    }
+}
+
+fn format_funding_table_row(output: &mut String, goal: &GoalDocument, include_contact: bool) {
     let total = sum_funding_costs(
         &goal
             .funding
@@ -1263,14 +1271,16 @@ fn format_funding_table_row(output: &mut String, goal: &GoalDocument) {
     let cost_str = total.map(|c| c.display()).unwrap_or_default();
     let status = goal.funding_status();
     output.push_str(&format!(
-        "| {} | [{}]({}#funding) | {} | {} | {} |\n",
+        "| {} | [{}]({}#funding) | {} |",
         status.emoji(),
         goal.title_with_status(),
         goal.link_path.display(),
         cost_str,
-        goal.funding_contact(),
-        goal.sponsors_display(),
     ));
+    if include_contact {
+        output.push_str(&format!(" {} |", goal.funding_contact()));
+    }
+    output.push_str(&format!(" {} |\n", goal.sponsors_display()));
 }
 
 /// Format goals that need funding as sections with people, summary, and funding table.
