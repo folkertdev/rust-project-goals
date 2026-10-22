@@ -1,16 +1,16 @@
 # Target directory size reduction
 
-| Metadata         |                                                                                  |
-| :--------------- | -------------------------------------------------------------------------------- |
-| Contact | @jyn514                                   |
-| Status           | Proposed                                                                         |
-| Roadmap             | Binary size reduction                 |
-| What and why     | Reduce the size of temporary compilation artifacts so developers need less disk space |
-| Zulip channel    | N/A (an existing stream can be re-used or new streams can be created on request) |
-| [cargo] champion | @weihanglo
+| Metadata       |                                                                                       |
+| :--            | :--                                                                                   |
+| Contact        | @jyn514                                                                               |
+| Status         | Accepted                                                                              |
+| Roadmap        | Binary size reduction                                                                 |
+| What and why   | Reduce the size of temporary compilation artifacts so developers need less disk space |
+| Tracking issue | [rust-lang/goals#830]                                                                 |
+| [cargo] champion | @weihanglo |
 | [compiler] champion | @petrochenkov |
-| [wg-compiler-performance] | @Kobzol |
-| [infra] | @Kobzol |
+| [wg-compiler-performance] champion | @Kobzol |
+| [infra] champion | @Kobzol |
 | Funding contact | @jyn514 |
 
 ## Summary
