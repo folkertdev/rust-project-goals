@@ -743,8 +743,7 @@ fn issue_text(timeframe: &str, document: &GoalDocument) -> String {
 | Contact          | {contact} |
 | Team(s)          | {teams} |
 | Goal document    | {goaldocument} |
-| Funding contact    | {funding_contact} |
-
+{funding_contact_row}
 ## Summary
 
 {summary}
@@ -754,7 +753,6 @@ fn issue_text(timeframe: &str, document: &GoalDocument) -> String {
 {lock_text}
 "##,
         contact = &document.metadata.owner_usernames().join(", "),
-        funding_contact = document.funding_contact(),
         summary = document.summary,
         goaldocument = goal_document_link(timeframe, document),
         teams = document
@@ -771,6 +769,11 @@ fn issue_text(timeframe: &str, document: &GoalDocument) -> String {
             })
             .collect::<Vec<_>>()
             .join(", "),
+        funding_contact_row = if document.needs_funding() {
+            format!("| Funding contact  | {} |\n", document.funding_contact())
+        } else {
+            String::new()
+        },
         lock_text = match &document.metadata.tracking_issue {
             Some(issue) => {
                 let topic = zulip_topic(&document.metadata.title, issue.number);
