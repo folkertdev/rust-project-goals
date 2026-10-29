@@ -54,11 +54,17 @@ which links to unresolved issues
 
 > *Explain your overall approach to solving the problem. Explain your design philosophy (including design axioms). Focus your discussion on what you aim to get done this year, but it is good to also give a sense for the "overall goal" you are working towards, if it extends beyond the work for this year. Team(s) should give you feedback on whether they are aligned both with your short-term and longer-term goals.*
 
-We propose to refactor the ABI logic in the rust compiler, picking more accurate representations 
+We propose to refactor the ABI logic in the rust compiler.
+
+The main goal is to calculate the ABI declaratively, exhaustively defining for every argument (scalar, (packed) struct, union, etc.) what the ABI for the current target is. This approach is quite different from the current one, which calculates a general ABI and then makes a series of adjustments.
+
+Relatedly, this new approach gives more control over attributes that the backend can use to optimize (e.g. LLVM's `noundef` or `dereferencable(N)`). We also hope to eliminate some inefficiencies that are introduced by our current ABI calculation (e.g. https://github.com/rust-lang/rust/issues/162739).
 
 A concrete benefit of this work is more accurate ABI information for consumers, e.g. `rustc_public` and (out-of-tree) compiler backends like gcc, cranelift, and perhaps `rustc_codegen_utc`.
 
-We propose to extend [abi-cafe](TODO) with features relevant to rust, for instance vector types and target modifiers like `-Zregparm`. The goal is to have an automated mechanism for testing our ABI logic and whether it is compatible with Clang and/or GCC.
+To help with development and to prevent future regressions, we also want to extend [abi-cafe](https://github.com/gankra/abi-cafe). This is a tool that checks the compatibility in practice of a compiler with itself and others (e.g. gcc or clang). We already have a [fork](https://github.com/folkertdev/abi-cafe) that supports cross-compilation, but it does not yet support all abi-relevant features. Remaining gaps include vector types and target modifiers like `-Zregparm`. We've found several bugs with `abi-cafe` already, and have also reported and solved several ABI issues in clang/LLVM where it incorrectly deviated from GCC.
+
+This also makes it easier to add/stabilize abi-modifying features. 
 
 ### Work items over the next year
 
@@ -66,11 +72,13 @@ We propose to extend [abi-cafe](TODO) with features relevant to rust, for instan
 
 | Task        | Owner(s) | Notes |
 | ----------- | -------- | ----- |
-| Do the work | *owner*  |       |
+| Refactor ABI calculation | @workingjubilee @beetrees @folkertdev @bjorn3 @gelbpunkt |       |
+| emit more accurate attributes | @beetrees (who else?) |
+| abi-cafe improvements | @folkertdev @gelbpunkt |
 
 - refactor 
 - improving what attributes we emit (for better LLVM optimizations) (noundef, dereferencability)
-- remove ABI type inefficiencies (e.g. see https://github.com/rust-lang/rust/issues/162739)
+- remove ABI type inefficiencies (e.g. see )
 - investigate `extern "Rust"` improvements (can we pass more in registers?)
 
 > **Subgoals:** If your goal has distinct workstreams, you can break them into
@@ -104,14 +112,8 @@ We propose to extend [abi-cafe](TODO) with features relevant to rust, for instan
 
 | Team       | Support level | Notes                                   |
 | ---------- | ------------- | --------------------------------------- |
-| [cargo]    |               |                                         |
-| [compiler] |               |                                         |
-| [infra]    |               |                                         |
-| [lang]     |               |                                         |
-| [libs]     |               |                                         |
-| [opsem]    |               |                                         |
-| [types]    |               |                                         |
-| ...        | ...           | *Feel free to add rows for other teams* |
+| [compiler] | medium        | We're a group of T-compiler (and adjacent) people, so beyond this group we don't anticipate to need (significant) review capacity.                                           |
+| [infra]    | depends       |                                         |
 
 ## Help wanted
 
