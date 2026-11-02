@@ -46,10 +46,6 @@ relevant issue
 - https://github.com/rust-lang/rust/issues/119183
 - https://github.com/rust-lang/compiler-team/issues/672
 
-which links to unresolved issues 
-
-- https://github.com/rust-lang/rust/issues/115609
-
 ### What we propose to do about it
 
 > *Explain your overall approach to solving the problem. Explain your design philosophy (including design axioms). Focus your discussion on what you aim to get done this year, but it is good to also give a sense for the "overall goal" you are working towards, if it extends beyond the work for this year. Team(s) should give you feedback on whether they are aligned both with your short-term and longer-term goals.*
@@ -62,9 +58,26 @@ Relatedly, this new approach gives more control over attributes that the backend
 
 A concrete benefit of this work is more accurate ABI information for consumers, e.g. `rustc_public` and (out-of-tree) compiler backends like gcc, cranelift, and perhaps `rustc_codegen_utc`.
 
+What we'd like is to be able to open the spec PDF and our implementation side-by-side, and verify that the implementation faithfully implements the specification.
+
 To help with development and to prevent future regressions, we also want to extend [abi-cafe](https://github.com/gankra/abi-cafe). This is a tool that checks the compatibility in practice of a compiler with itself and others (e.g. gcc or clang). We already have a [fork](https://github.com/folkertdev/abi-cafe) that supports cross-compilation, but it does not yet support all abi-relevant features. Remaining gaps include vector types and target modifiers like `-Zregparm`. We've found several bugs with `abi-cafe` already, and have also reported and solved several ABI issues in clang/LLVM where it incorrectly deviated from GCC.
 
 This also makes it easier to add/stabilize abi-modifying features. 
+
+Getting the ABI right is important for Miri.
+
+Ralf wants a normalization step so that different `TyAndLayout`s that are ABI-compatible are actually equal. That way subsequent steps can't accidentally assign different `PassMode`s for types that are ABI-compatible.
+
+Using some sort of `enum CAbiType { Scalar(..), Complex(..), Struct(..), Union(..), PackedStruct(..), ..., Rustlike(...)? }` seems like it could work.
+
+AbstractRepr is intuitively like CAbiType
+
+struct SomeAbi { gprs: ArrayVec<RegContents, 8>, fprs: [RegContents: 8], stack: Vec<RegContents> } 
+
+struct RegContents {
+    arg_index: usize,
+    byte_range: Range<usize>
+} 
 
 ### Work items over the next year
 
@@ -72,6 +85,7 @@ This also makes it easier to add/stabilize abi-modifying features.
 
 | Task        | Owner(s) | Notes |
 | ----------- | -------- | ----- |
+| Design | @workingjubilee @beetrees @folkertdev @bjorn3 @gelbpunkt |       |
 | Refactor ABI calculation | @workingjubilee @beetrees @folkertdev @bjorn3 @gelbpunkt |       |
 | emit more accurate attributes | @beetrees (who else?) |
 | abi-cafe improvements | @folkertdev @gelbpunkt |
