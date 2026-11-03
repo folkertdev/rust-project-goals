@@ -32,7 +32,7 @@ We will refactor the compiler logic for ABI calculation: the logic that determin
 
 ### The status quo
 
-It is a rite of passage for anyone playing around with LLVM to discover that it does not actually handle ABI for you. Whether to pass values directly or indirectly, whether to put arguments in registers or on the stack: it seems like LLVM IR handles it, but this is a lie. 
+It is a rite of passage for anyone playing around with LLVM to discover that it does not actually handle ABI for you. Whether to pass values directly or indirectly, whether to put arguments in registers or on the stack: it seems like LLVM IR handles it, but this is a lie.
 
 So, compiler frontends must implement this logic themselves, and getting it right is far from easy. For the most part it comes down to reading PDFs, writing an implementation, trying it on some projects, and hoping for the best. Inevitably, some edge case was missed and sometimes years later this bug is reported and fixed.
 
@@ -41,7 +41,7 @@ Some recent examples are:
 - https://github.com/rust-lang/rust/issues/163911
 - https://github.com/rust-lang/rust/pull/161394
 
-relevant issue 
+relevant issue
 
 - https://github.com/rust-lang/rust/issues/119183
 - https://github.com/rust-lang/compiler-team/issues/672
@@ -62,22 +62,10 @@ What we'd like is to be able to open the spec PDF and our implementation side-by
 
 To help with development and to prevent future regressions, we also want to extend [abi-cafe](https://github.com/gankra/abi-cafe). This is a tool that checks the compatibility in practice of a compiler with itself and others (e.g. gcc or clang). We already have a [fork](https://github.com/folkertdev/abi-cafe) that supports cross-compilation, but it does not yet support all abi-relevant features. Remaining gaps include vector types and target modifiers like `-Zregparm`. We've found several bugs with `abi-cafe` already, and have also reported and solved several ABI issues in clang/LLVM where it incorrectly deviated from GCC.
 
-This also makes it easier to add/stabilize abi-modifying features. 
+This also makes it easier to add/stabilize abi-modifying features.
 
 Getting the ABI right is important for Miri.
 
-Ralf wants a normalization step so that different `TyAndLayout`s that are ABI-compatible are actually equal. That way subsequent steps can't accidentally assign different `PassMode`s for types that are ABI-compatible.
-
-Using some sort of `enum CAbiType { Scalar(..), Complex(..), Struct(..), Union(..), PackedStruct(..), ..., Rustlike(...)? }` seems like it could work.
-
-AbstractRepr is intuitively like CAbiType
-
-struct SomeAbi { gprs: ArrayVec<RegContents, 8>, fprs: [RegContents: 8], stack: Vec<RegContents> } 
-
-struct RegContents {
-    arg_index: usize,
-    byte_range: Range<usize>
-} 
 
 ### Work items over the next year
 
@@ -90,7 +78,7 @@ struct RegContents {
 | emit more accurate attributes | @beetrees (who else?) |
 | abi-cafe improvements | @folkertdev @gelbpunkt |
 
-- refactor 
+- refactor
 - improving what attributes we emit (for better LLVM optimizations) (noundef, dereferencability)
 - remove ABI type inefficiencies (e.g. see )
 - investigate `extern "Rust"` improvements (can we pass more in registers?)
@@ -114,7 +102,7 @@ struct RegContents {
 >     * *Example:* A compiler change that will require a few small PRs to be reviewed.
 >     * *Example:* Asking the lang team to approve a lint.
 > * Medium: You need dedicated support from one person, but the rest of the team doesn't have to do much.
->     * *Example:* A compiler change that doesn't require any rearchitecting but 
+>     * *Example:* A compiler change that doesn't require any rearchitecting but
 >     * *Example:* Implementing a small, noncontroversial language feature.
 > * Large: You need deeper review from the entire team.
 >     * *Example:* Rearchitecting part of the compiler.
@@ -165,3 +153,73 @@ struct RegContents {
 ### What do I do with this space?
 
 *This is a good place to elaborate on your reasoning above -- for example, why did you put the design axioms in the order that you did? It's also a good place to put the answers to any questions that come up during discussion. The expectation is that this FAQ section will grow as the goal is discussed and eventually should contain a complete summary of the points raised along the way.*
+
+
+## Design
+
+### Goal: normalization of rust types
+
+Ralf wants a normalization step so that different `TyAndLayout`s that are ABI-compatible are actually equal. That way subsequent steps can't accidentally assign different `PassMode`s for types that are ABI-compatible.
+
+### Goal: checking validity agains the specification
+
+Bugs in the ABI code are often due to an incomplete translation of the specification into rust code. We would like to write our code such that it is easy (or at least easier) to check against the official documents.
+
+### Input to callconv
+
+There appears to be broad consensus on the rough shape of the input to ABI computation (currently in the `callconv` files). The input should be some `enum CAbiType { ... }` where
+
+- rust types have been normalized, dropping details that are not relevant to the ABI. For instance `repr(transparent)` wrappers have been stripped. This prevents a class of bugs where the wrapped and unwrapped type would be assigned a different `PassMode`
+- the variants are at the level of abstraction of ABI specifications, e.g. `enum CAbiType { Scalar(..), Struct(..), Union(..), ... }`
+
+### Output from callconv
+
+There is less agreement (so far) on the output type of the `callconv` computation.
+
+The status quo is that we determine an `ArgAbi` for every parameter, and then adjust this value for a specific calling convention. One consequence is that this is a uniform representation: the type is the same for each calling convention, and the backend can treat it generically (it has no special code for wasm, or powerpc, etc.).
+
+However, this has caused some issues in the past because LLVM does not handle the signatures uniformly itself (e.g. with regards to padding, or what `inreg` means).
+
+Hence the current design is to have something that is closer to the specification. For instance, ppc32 describes an algorithm in terms of modes. 
+
+```rust
+struct Ppc32Abi { params: Vec<Mode>, ret: Option<Mode> }
+
+enum Mode {
+    SingleGP,
+    DualGP,
+    QuadGP,
+    EightGP,
+    SingleFP,
+    DoubleFP,
+    SingleVR,                                               
+}
+```
+
+In practice the LLVM backend passes a QuadGP as two `i64` parameters, but we must ensure that the value is never split between registers and the stack. We defer how to do that (e.g. by adding padding). 
+
+This representation matches the ABI spec more closely, which will make it easier to validate our implementation.
+
+---
+
+```rust
+struct Sparc64Abi { params: Vec<Word>, ret: Option<Word> }
+
+enum Word {
+    Double,
+    Quad,
+}
+```
+
+TODO: have some other examples here (sparc64 is weird I think, maybe mips?)
+
+---
+
+Then of course we need to lower this target-specific representation again. I see two approaches:
+
+- do this in the backend. This duplicates code but we may need the flexibility. Today we kind of overfit to LLVM in earlier stages, and the other backends have have to just deal with that.
+- do this in `callconv`. This keeps the backends simpler, but a homogenous reporesentation might lack detail 
+
+Some considerations
+
+- we'd want as much code as possible in rustc_codegen_ssa so at least GCC and LLVM can share the implementation (and hopefully cranelift in the future too)
