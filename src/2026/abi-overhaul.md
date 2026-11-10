@@ -64,6 +64,7 @@ To help with development and to prevent future regressions, we also want to exte
 
 This also makes it easier to add/stabilize abi-modifying features.
 
+A fundamental promise of Miri is that if it reports no issues, there are in fact no issues. Incorrect
 Getting the ABI right is important for Miri.
 
 
@@ -77,6 +78,8 @@ Getting the ABI right is important for Miri.
 | Refactor ABI calculation | @workingjubilee @beetrees @folkertdev @bjorn3 @gelbpunkt |       |
 | emit more accurate attributes | @beetrees (who else?) |
 | abi-cafe improvements | @folkertdev @gelbpunkt |
+| move va_arg code into `callconv` | @beetrees, @folkertdev |
+| move va_arg code into `rustc_codegen_ssa` | @beetrees, @folkertdev |
 
 - refactor
 - improving what attributes we emit (for better LLVM optimizations) (noundef, dereferencability)
@@ -176,11 +179,15 @@ There appears to be broad consensus on the rough shape of the input to ABI compu
 
 There is less agreement (so far) on the output type of the `callconv` computation.
 
-The status quo is that we determine an `ArgAbi` for every parameter, and then adjust this value for a specific calling convention. One consequence is that this is a uniform representation: the type is the same for each calling convention, and the backend can treat it generically (it has no special code for wasm, or powerpc, etc.).
+The status quo is that we determine an `ArgAbi` for every parameter based on the Rust type, and then adjust this value for a specific calling convention. One consequence is that what we provide to the backend is target-agnostic: the same type for each calling convention, and the backend can treat it generically (it has no special code for wasm, or powerpc, etc.).
 
-However, this has caused some issues in the past because LLVM does not handle the signatures uniformly itself (e.g. with regards to padding, or what `inreg` means).
+However, this has caused some issues in the past because LLVM does not handle the signatures uniformly itself (e.g. with regards to padding, or what `inreg` means). Furthermore, `ArgAbi` overfits to the LLVM backend and the other backends need to somehow make it work.
 
-Hence the current design is to have something that is closer to the specification. For instance, ppc32 describes an algorithm in terms of modes. 
+Our current ideas for a redesign is to make the logic in `callconv` produce a representation that is more target-specific, and have it more closely match the specification text.
+
+#### Example: powerpc
+
+For instance, ppc32 describes an algorithm in terms of modes.
 
 ```rust
 struct Ppc32Abi { params: Vec<Mode>, ret: Option<Mode> }
@@ -192,15 +199,15 @@ enum Mode {
     EightGP,
     SingleFP,
     DoubleFP,
-    SingleVR,                                               
+    SingleVR,
 }
 ```
 
-In practice the LLVM backend passes a QuadGP as two `i64` parameters, but we must ensure that the value is never split between registers and the stack. We defer how to do that (e.g. by adding padding). 
+In practice the LLVM backend passes a QuadGP as two `i64` parameters, but we must ensure that the value is never split between registers and the stack. We defer how to do that (e.g. by adding padding).
 
 This representation matches the ABI spec more closely, which will make it easier to validate our implementation.
 
----
+#### Example: sparc64
 
 ```rust
 struct Sparc64Abi { params: Vec<Word>, ret: Option<Word> }
@@ -211,15 +218,8 @@ enum Word {
 }
 ```
 
-TODO: have some other examples here (sparc64 is weird I think, maybe mips?)
+#### Lowering in the backend
 
----
+The current idea is to provide this target-specific ABI representation to the backend, which can then decide how to lower e.g. a `powerpc::Mode::QuadGP`. The backend now has to care about target details, but we'd argue it kind of had to anyway, and in many cases the logic just moves around from `callconv` to the backend, which is actually in a better position to deal with it.
 
-Then of course we need to lower this target-specific representation again. I see two approaches:
-
-- do this in the backend. This duplicates code but we may need the flexibility. Today we kind of overfit to LLVM in earlier stages, and the other backends have have to just deal with that.
-- do this in `callconv`. This keeps the backends simpler, but a homogenous reporesentation might lack detail 
-
-Some considerations
-
-- we'd want as much code as possible in rustc_codegen_ssa so at least GCC and LLVM can share the implementation (and hopefully cranelift in the future too)
+We're hopeful that much of this code can live in `rustc_codegen_ssa`, so that it can be shared between at least the LLVM and GCC backends.
